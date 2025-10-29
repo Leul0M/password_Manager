@@ -10,6 +10,10 @@ import (
 )
 
 func main() {
+    if err := db.InitCrypto(); err != nil {
+        fmt.Println("Encryption setup failed:", err)
+        return
+    }
 	err := db.InitDB()
 	if err != nil {
 		fmt.Println("Error initializing database:", err)

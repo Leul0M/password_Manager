@@ -54,23 +54,27 @@ func (m menuModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 
 func (m menuModel) View() string {
-	s := HeaderStyle.Render("\n🗄️ Password Manager\n")
-	s += MenuItemStyle.Render("\nUse arrow keys ↑ ↓ and press Enter:\n\n")
+    header := HeaderStyle.Render("🗄️ Password Manager") + "\n" + SubtitleStyle.Render("Manage credentials securely")
+    body := HelpTextStyle.Render("\nUse ↑/↓ or j/k, then Enter:\n\n")
 
-	for i, choice := range m.choices {
-		cursor := " "
-		if i == m.cursor {
-			cursor = "➤"
-		}
-		line := fmt.Sprintf("%s %s\n", cursor, choice)
-		if i == m.cursor {
-			line = SelectedStyle.Render(line)
-		} else {
-			line = MenuItemStyle.Render(line)
-		}
-		s += line
-	}
+    for i, choice := range m.choices {
+        cursor := "  "
+        if i == m.cursor {
+            cursor = CursorStyle.Render("› ")
+        } else {
+            cursor = HelpTextStyle.Render("  ")
+        }
+        line := fmt.Sprintf("%s%s\n", cursor, choice)
+        if i == m.cursor {
+            line = SelectedStyle.Render("  " + choice) + "\n"
+        } else {
+            line = MenuItemStyle.Render(line)
+        }
+        body += line
+    }
 
-	s += PromptStyle.Render("\nPress q to quit.\n")
-	return s
+    footer := "\n" + HelpTextStyle.Render("Press ") + PromptStyle.Render("q") + HelpTextStyle.Render(" to quit") + "\n"
+
+    content := header + "\n" + body + footer
+    return ContainerStyle.Render(content)
 }

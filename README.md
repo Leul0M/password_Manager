@@ -8,7 +8,7 @@ Welcome to the **Password Manager**! This is a stylish and secure CLI tool built
 - **Add** new passwords
 - **Delete** passwords
 - **List** all saved passwords
-- **Secure** storage using a local database
+- **Encryption-at-rest** using AES-GCM with a master passphrase
 - **Simple menu navigation**
 
 ---
@@ -31,6 +31,8 @@ go build -o password_manager.exe
 ./password_manager.exe
 ```
 
+On first run, you will be prompted to create a **master passphrase**. This passphrase derives an encryption key using `scrypt`. A local key file `vault.key` (contains only a random salt and verification tag) is created. Keep your passphrase safe—without it, your data cannot be decrypted.
+
 ---
 
 ## 📋 Usage
@@ -43,6 +45,12 @@ When you run the program, you'll see a colorful menu:
 - `Exit` 🚪 : Quit the program
 
 Just follow the prompts to manage your passwords securely!
+
+### 🔐 Encryption Details
+- Your passwords and notes are encrypted before being stored in the SQLite database using **AES-256-GCM**.
+- The encryption key is derived from your master passphrase via **scrypt (N=32768, r=8, p=1)** with a 16-byte random salt.
+- The key file `vault.key` stores the salt and a verification tag (HMAC) to validate your passphrase on subsequent runs. No plaintext secrets are stored.
+- Changing the master passphrase is not yet supported; if needed, export, re-encrypt, and re-import.
 
 ---
 
@@ -61,7 +69,8 @@ password_Manager/
 │   └── style.go      # Colorful styles
 │
 └── db/
-    └── database.go   # Database logic
+    ├── database.go   # Database logic (encrypts/decrypts fields)
+    └── crypto.go     # Key derivation and AES-GCM helpers
 ```
 
 ---

@@ -36,12 +36,20 @@ func InitDB() error {
 }
 
 func AddCredential(email, password, note string) error {
-	_, err := DB.Exec("INSERT INTO credentials (email, password, note) VALUES (?, ?, ?)", email, password, note)
+    encPassword, err := EncryptString(password)
+    if err != nil {
+        return err
+    }
+    encNote, err := EncryptString(note)
+    if err != nil {
+        return err
+    }
+    _, err = DB.Exec("INSERT INTO credentials (email, password, note) VALUES (?, ?, ?)", email, encPassword, encNote)
 	return err
 }
 
 func GetAllCredentials() ([]Credential, error) {
-	rows, err := DB.Query("SELECT id, email, password, note FROM credentials")
+    rows, err := DB.Query("SELECT id, email, password, note FROM credentials")
 	if err != nil {
 		return nil, err
 	}
@@ -50,10 +58,21 @@ func GetAllCredentials() ([]Credential, error) {
 	var creds []Credential
 	for rows.Next() {
 		var c Credential
-		err := rows.Scan(&c.ID, &c.Email, &c.Password, &c.Note)
+        var encPass, encNote string
+        err := rows.Scan(&c.ID, &c.Email, &encPass, &encNote)
 		if err != nil {
 			return nil, err
 		}
+        if dec, derr := DecryptString(encPass); derr == nil {
+            c.Password = dec
+        } else {
+            c.Password = "<decrypt error>"
+        }
+        if decN, derr := DecryptString(encNote); derr == nil {
+            c.Note = decN
+        } else {
+            c.Note = "<decrypt error>"
+        }
 		creds = append(creds, c)
 	}
 	return creds, nil
@@ -61,7 +80,7 @@ func GetAllCredentials() ([]Credential, error) {
 
 
 func ListCredentials() (string, error) {
-	rows, err := DB.Query("SELECT id, email, password, note FROM credentials")
+    rows, err := DB.Query("SELECT id, email, password, note FROM credentials")
 	if err != nil {
 		return "", err
 	}
@@ -70,12 +89,16 @@ func ListCredentials() (string, error) {
 	var result strings.Builder
 	for rows.Next() {
 		var id int
-		var email, password, note string
-		err = rows.Scan(&id, &email, &password, &note)
+        var email, encPass, encNote string
+        err = rows.Scan(&id, &email, &encPass, &encNote)
 		if err != nil {
 			return "", err
 		}
-		result.WriteString(fmt.Sprintf("[%d] Email: %s | Password: %s | Note: %s\n", id, email, password, note))
+        decPass, derr1 := DecryptString(encPass)
+        if derr1 != nil { decPass = "<decrypt error>" }
+        decNote, derr2 := DecryptString(encNote)
+        if derr2 != nil { decNote = "<decrypt error>" }
+        result.WriteString(fmt.Sprintf("[%d] Email: %s | Password: %s | Note: %s\n", id, email, decPass, decNote))
 	}
 
 	return result.String(), nil
